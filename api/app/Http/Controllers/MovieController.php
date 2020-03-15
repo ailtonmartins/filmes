@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 use Validator;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,7 @@ class MovieController extends Controller
      */
     public function index()
     {
-        //
+        return Movie::paginate(5);
     }
 
     /**
@@ -26,8 +27,7 @@ class MovieController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-    {
-          
+    {          
           $data = $request->all();
          
           $validator = Validator::make($data, [
@@ -61,8 +61,25 @@ class MovieController extends Controller
           $movie->file_size = $file->getSize();
           $movie->save();
 
-        return response()->json( $movie, 200); 
+
+          if ( !empty($data['tags'])  ) {
+            $tags = explode(';' , $data['tags']);
+            foreach( $tags as $v ) {
+                $valueTag = trim($v);
+                if ( !empty($v) ) {
+                    $tag = new Tag();
+                    $tag->name = $v;
+                    $tag->movie = $movie->id;
+                    $tag->save();
+                }
+               
+            }
+          }
+          
+        return $this->show( $movie ); 
     }
+
+
 
     /**
      * Display the specified resource.
@@ -72,7 +89,7 @@ class MovieController extends Controller
      */
     public function show(Movie $movie)
     {
-        //
+        return response()->json( Movie::with(['tags'])->find(  $movie->id ) , 200) ;
     }
  
     /**
