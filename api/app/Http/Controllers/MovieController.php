@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Movie;
 use Illuminate\Http\Request;
+use Validator;
+use Illuminate\Support\Facades\Auth;
 
 class MovieController extends Controller
 {
@@ -25,9 +27,29 @@ class MovieController extends Controller
      */
     public function store(Request $request)
     {
+          
           $data = $request->all();
 
-        return response()->json( $data, 200); 
+          $validator = Validator::make($data, [
+                'name' => 'required',
+                'file' => 'required'
+          ]);
+
+          if ($validator->fails()) {
+                return response()->json([
+                    'message'   => 'Validation Failed',
+                    'errors'    => $validator->errors()->all()
+                ], 422);
+          }
+
+          $user = Auth::user();
+
+          $movie = new Movie();
+          $movie->fill($data);
+          $movie->user = $user->id;
+          $movie->save();
+
+        return response()->json( $movie, 200); 
     }
 
     /**
