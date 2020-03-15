@@ -29,7 +29,10 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 WORKDIR /var/www
 COPY . /var/www
 
-RUN composer install
+RUN chmod -R 775 storage
+RUN chmod -R 775 bootstrap/cache
 
-CMD  php artisan key:generate; php artisan serve --host=0.0.0.0 --port=8000
+RUN composer update
+
+CMD php artisan key:generate; php artisan jwt:secret; php artisan serve --host=0.0.0.0 --port=8000
 EXPOSE 8000

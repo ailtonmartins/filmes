@@ -49,5 +49,6 @@ services:
       - filmes
 networks:
   filmes:
+     driver: bridge
 volumes:
   db_data:
