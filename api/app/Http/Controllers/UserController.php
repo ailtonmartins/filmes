@@ -8,11 +8,11 @@ use Illuminate\Http\Request;
 use JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
  
-class ApiController extends Controller
+class UserController extends Controller
 {
     public $loginAfterSignUp = true;
  
-    public function register(RegisterAuthRequest $request)
+    public function create(RegisterAuthRequest $request)
     {
         $user = new User();
         $user->name = $request->name;
@@ -20,14 +20,7 @@ class ApiController extends Controller
         $user->password = bcrypt($request->password);
         $user->save();
  
-        if ($this->loginAfterSignUp) {
-            return $this->login($request);
-        }
- 
-        return response()->json([
-            'success' => true,
-            'data' => $user
-        ], 200);
+        return $this->login($request);
     }
  
     public function login(Request $request)
@@ -69,7 +62,7 @@ class ApiController extends Controller
         }
     }
  
-    public function getAuthUser(Request $request)
+    public function show(Request $request)
     {
         try {
             if (! $user = JWTAuth::parseToken()->authenticate()) {

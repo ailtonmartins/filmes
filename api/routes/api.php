@@ -2,10 +2,23 @@
 
 use Illuminate\Http\Request;
 
-Route::post('login', 'ApiController@login');
-Route::post('register', 'ApiController@register');
+Route::get('/', function () {
+    return response()->json(['message' => 'Filmes API', 'status' => 'Connected']);;
+});
+
+Route::post('login', 'UserController@login');
+Route::post('register', 'UserController@create');
  
 Route::group(['middleware' => 'auth.jwt'], function () {
-    Route::get('logout', 'ApiController@logout'); 
-    Route::get('user', 'ApiController@getAuthUser'); 
+    Route::get('logout', 'UserController@logout'); 
+    Route::get('user', 'UserController@show'); 
+
+    /** Movies */
+    Route::group(['prefix' => 'movies'], function () {         
+        Route::get('/', 'MovieController@index');
+        Route::get('/:id', 'MovieController@show');
+        Route::put('/:id', 'MovieController@update');
+        Route::delete('/:id', 'MovieController@destroy');
+        Route::post('/', 'MovieController@store');
+    });
 });
