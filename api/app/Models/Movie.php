@@ -52,5 +52,14 @@ class Movie extends Model
 	public function tags()
 	{
 		return $this->hasMany(Tag::class, 'movie');
+    }
+    
+    public function getFileAttribute($value)
+	{
+		if ($value) {
+			return  asset('/movie/' . $value);
+		} else {
+			return '';
+		}
 	}
 }

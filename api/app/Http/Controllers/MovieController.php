@@ -29,10 +29,13 @@ class MovieController extends Controller
     {
           
           $data = $request->all();
-
+         
           $validator = Validator::make($data, [
-                'name' => 'required',
-                'file' => 'required'
+               'name' => 'required',
+               'file' => 'required | mimes:mpeg,mp4,mov,3gp,avi,wmv | max:5000'
+          ],
+          [
+               'file.max' => 'The file may not be greater than 5MB'
           ]);
 
           if ($validator->fails()) {
@@ -42,11 +45,18 @@ class MovieController extends Controller
                 ], 422);
           }
 
+          /** File action */
+          $file = $request->file('file');
+          $fileName = time().'.'.$file->getClientOriginalExtension();
+          $destinationPath = public_path('/movie');
+          $file->move($destinationPath, $fileName);
+        
           $user = Auth::user();
 
           $movie = new Movie();
           $movie->fill($data);
           $movie->user = $user->id;
+          $movie->file = $fileName;
           $movie->save();
 
         return response()->json( $movie, 200); 
