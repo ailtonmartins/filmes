@@ -47,6 +47,7 @@ class MovieController extends Controller
 
           /** File action */
           $file = $request->file('file');
+        
           $fileName = time().'.'.$file->getClientOriginalExtension();
           $destinationPath = public_path('/movie');
           $file->move($destinationPath, $fileName);
@@ -57,6 +58,7 @@ class MovieController extends Controller
           $movie->fill($data);
           $movie->user = $user->id;
           $movie->file = $fileName;
+          $movie->file_size = $file->getSize();
           $movie->save();
 
         return response()->json( $movie, 200); 
