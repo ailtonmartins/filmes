@@ -15,9 +15,42 @@ class MovieController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index( Request $data )
     {
-        return Movie::paginate(5);
+        $size = 5;
+        $dir = isset($data->dir) ? $data->dir : 'asc';
+        $prop = isset($data->prop) ?  $data->prop : 'id';
+        $search = $data->search ?  $data->search : '';
+
+        $validator = Validator::make(['dir'=>$dir,'prop'=>$prop], [
+               'dir' => 'in:asc,desc',
+               'prop' =>  'in:id,name'
+             ],
+             [
+               'dir.in' => 'The dir field only accepts values asc and desc',
+               'prop.in' => 'The prop field only accepts values id and name'
+             ]);
+
+        if ($validator->fails()) {
+                return response()->json([
+                    'message'   => 'Validation Failed',
+                    'errors'    => $validator->errors()->all()
+                ], 422);
+        }
+
+        $movies = Movie::with("tags");
+
+        if( $search != '' ) {
+          $movies->orWhere('movies.id', 'like', '%' . $search . '%');           
+          $movies->orWhere('movies.name', 'like', '%' . $search . '%');
+          $movies->orWhereHas('tags', function ($query) use( $search ) {
+                                                           $query->where( 'tags.name', 'like', '%' . $search . '%');
+                                                        });
+        }
+       
+        $movies->orderBy($prop, $dir);
+
+        return $movies->paginate($size);
     }
 
     /**
@@ -29,14 +62,13 @@ class MovieController extends Controller
     public function store(Request $request)
     {          
           $data = $request->all();
-         
           $validator = Validator::make($data, [
-               'name' => 'required',
-               'file' => 'required | mimes:mpeg,mp4,mov,3gp,avi,wmv | max:5000'
-          ],
-          [
-               'file.max' => 'The file may not be greater than 5MB'
-          ]);
+                    'name' => 'required',
+                    'file' => 'required | mimes:mpeg,mp4,mov,3gp,avi,wmv | max:5000'
+                ],
+                [
+                    'file.max' => 'The file may not be greater than 5MB'
+                ]);
 
           if ($validator->fails()) {
                 return response()->json([
@@ -76,7 +108,7 @@ class MovieController extends Controller
             }
           }
           
-        return $this->show( $movie ); 
+        return $this->show( $movie->id ); 
     }
 
 
@@ -87,21 +119,83 @@ class MovieController extends Controller
      * @param  \App\Models\Movie  $movie
      * @return \Illuminate\Http\Response
      */
-    public function show(Movie $movie)
+    public function show( $id )
     {
-        return response()->json( Movie::with(['tags'])->find(  $movie->id ) , 200) ;
+        $movie = Movie::with(['tags'])->find(  $id );
+        if ( $movie ) {
+            return response()->json( $movie , 200);
+        } else {
+            return response()->json([
+                'message'   => 'Movie not found',
+            ], 404);
+        }
     }
  
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @param  \App\Models\Movie  $movie
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Movie $movie)
+    public function update(Request $request, $id)
     {
-        //
+       $data = $request->all(); 
+
+       $validator = Validator::make($data, [
+                    'name' => 'required',
+                    'file' => 'mimes:mpeg,mp4,mov,3gp,avi,wmv | max:5000'
+                ],
+                [
+                    'file.max' => 'The file may not be greater than 5MB'
+                ]);
+
+       if ($validator->fails()) {
+          return response()->json([
+              'message'   => 'Validation Failed',
+              'errors'    => $validator->errors()->all()
+          ], 422);
+       }
+
+       $movie = Movie::find(  $id );
+
+       if ( $movie ) {
+            Tag::where('movie', $id)->delete();          
+            if ( !empty($data['tags'])  ) {
+                    $tags = explode(';' , $data['tags']);                   
+                    foreach( $tags as $v ) {
+                        $valueTag = trim($v);
+                        if ( !empty($v) ) {
+                            $tag = new Tag();
+                            $tag->name = $v;
+                            $tag->movie = $movie->id;
+                            $tag->save();
+                        }
+                    
+                    }
+            }
+            
+            /** File action */
+            if ( $request->file('file') ) {
+                $file = $request->file('file');
+                $fileName = time().'.'.$file->getClientOriginalExtension();
+                $destinationPath = public_path('/movie');
+                $file->move($destinationPath, $fileName);
+                $movie->file = $fileName;
+                $movie->file_size = $file->getSize();
+            }
+                       
+            $movie->fill($data);           
+            $movie->save();
+
+          return $this->show( $id );
+       } else {
+          return response()->json([
+             'message'   => 'Movie not found',
+          ], 404);
+       }
+       
+     return response()->json( $movie , 200);
     }
 
     /**
@@ -115,3 +209,6 @@ class MovieController extends Controller
         //
     }
 }
+
+
+ 

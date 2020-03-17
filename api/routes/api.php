@@ -16,9 +16,9 @@ Route::group(['middleware' => 'auth.jwt'], function () {
     /** Movies */
     Route::group(['prefix' => 'movies'], function () {         
         Route::get('/', 'MovieController@index');
-        Route::get('/:id', 'MovieController@show');
-        Route::put('/:id', 'MovieController@update');
-        Route::delete('/:id', 'MovieController@destroy');
+        Route::get('/{id}', 'MovieController@show');
+        Route::put('/{id}', 'MovieController@update');
+        Route::delete('/{id}', 'MovieController@destroy');
         Route::post('/', 'MovieController@store');
     });
 });
