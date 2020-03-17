@@ -6,6 +6,7 @@ use App\Models\Movie;
 use App\Models\Tag;
 use Illuminate\Http\Request;
 use Validator;
+use File;
 use Illuminate\Support\Facades\Auth;
 
 class MovieController extends Controller
@@ -174,18 +175,26 @@ class MovieController extends Controller
                     
                     }
             }
-            
+
+            $movie->fill($data);
+
             /** File action */
-            if ( $request->file('file') ) {
-                $file = $request->file('file');
-                $fileName = time().'.'.$file->getClientOriginalExtension();
+            $file = $request->file('file');
+            if ( $file ) {
+
                 $destinationPath = public_path('/movie');
+
+                if ( !empty($movie->file) ) {
+                    File::delete( $destinationPath.'/'.$movie->file );
+                }
+                
+                $fileName = time().'.'.$file->getClientOriginalExtension();
                 $file->move($destinationPath, $fileName);
+               
+                
                 $movie->file = $fileName;
                 $movie->file_size = $file->getSize();
-            }
-                       
-            $movie->fill($data);           
+            }                       
             $movie->save();
 
           return $this->show( $id );
